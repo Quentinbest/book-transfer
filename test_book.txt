@@ -1,0 +1,17 @@
+Chapter 1: The Beginning
+
+This is the first chapter of our test book.
+It contains some sample content to test
+the chapter detection and splitting logic.
+
+Chapter 2: The Middle
+
+This is the second chapter. It continues
+the story from where the first chapter left off.
+More interesting content follows.
+
+Chapter 3: The End
+
+Finally, we reach the conclusion of our
+test book. This demonstrates that the
+chapter splitting works correctly.
