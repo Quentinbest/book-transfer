@@ -72,3 +72,21 @@ With no chapter markers.
     assert len(chapters) == 1
     assert chapters[0][0] == "Book"
     assert "Just a simple text file" in chapters[0][1]
+
+def test_extract_chapters_ignores_part_of_in_body(create_txt_file):
+    content = """Intro paragraph.
+Part of their approach was standard imitation learning.
+
+Chapter 1: The Beginning
+Content of chapter 1.
+
+Chapter 2: The End
+Content of chapter 2.
+"""
+    filepath = create_txt_file(content)
+    book = TxtBook(filepath)
+    chapters = book.extract_chapters()
+
+    assert len(chapters) == 2
+    assert chapters[0][0] == "1: The Beginning"
+    assert chapters[1][0] == "2: The End"

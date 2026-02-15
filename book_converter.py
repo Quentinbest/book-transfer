@@ -146,9 +146,14 @@ class TxtBook(Book):
         with open(self.filepath, "r", encoding="utf-8", errors="ignore") as f:
             text = f.read()
 
+        chapter_token = (
+            r"(?:\d+|[IVXLCM]+|"
+            r"ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|"
+            r"ELEVEN|TWELVE|THIRTEEN|FOURTEEN|FIFTEEN|SIXTEEN|SEVENTEEN|EIGHTEEN|NINETEEN|TWENTY)"
+        )
         pattern = re.compile(
-            r"(?P<title>^(\s*Chapter|CHAPTER|Part|PART|Book|BOOK)\s+[\w\d]+.*$)",
-            re.MULTILINE
+            rf"(?P<title>^\s*(?:Chapter|Part|Book)\s+{chapter_token}\b.*$)",
+            re.MULTILINE | re.IGNORECASE
         )
         matches = list(pattern.finditer(text))
         chapters = []
@@ -159,7 +164,7 @@ class TxtBook(Book):
                 end = matches[i + 1].start() if (i + 1) < len(matches) else len(text)
                 title_line = matches[i].group("title").strip()
                 content = text[start:end].strip()
-                title = re.sub(r"^(Chapter|CHAPTER|Part|PART|Book|BOOK)\s+", "", title_line)
+                title = re.sub(r"^(Chapter|Part|Book)\s+", "", title_line, flags=re.IGNORECASE)
                 chapters.append((title.strip() or f"Chapter {i+1}", content))
         else:
             chapters = [("Book", text)]
