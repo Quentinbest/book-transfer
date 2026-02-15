@@ -206,15 +206,16 @@ Run tests:
 .venv/bin/pytest -q
 ```
 
-当前测试主要覆盖 TXT 章节切分逻辑（包括回归场景）。
+当前测试已覆盖 TXT/PDF/DOCX/EPUB 的核心章节提取行为与关键回归场景。
 
-Current tests mainly cover TXT chapter splitting (including regression cases).
+Current tests cover core chapter extraction behavior and key regression scenarios across TXT/PDF/DOCX/EPUB.
 
 ## 8. 章节识别说明 | Chapter Detection Behavior
 
 ### 8.1 TXT（Python）
 
 - 识别 `Chapter/Part/Book + 编号` 形式的行作为章节标题
+- 当存在章节标记时，首个章节标题之前的前言文本不会单独输出
 - 若未匹配到章节标记，则整个文件作为一个章节输出
 
 ### 8.2 PDF（Python）
@@ -235,6 +236,7 @@ Current tests mainly cover TXT chapter splitting (including regression cases).
 ### 8.1 TXT (Python)
 
 - Detects lines matching `Chapter/Part/Book + token` as chapter titles
+- When chapter markers exist, text before the first marker is not emitted as a separate chapter
 - Falls back to single chapter if no markers are found
 
 ### 8.2 PDF (Python)

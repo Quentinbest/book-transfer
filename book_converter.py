@@ -2,12 +2,6 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from ebooklib import epub
-from bs4 import BeautifulSoup
-from markdownify import markdownify as md
-from pdfminer.high_level import extract_pages
-from pdfminer.layout import LTTextContainer
-from docx import Document
 
 class Book(ABC):
     """Abstract base class for a book."""
@@ -24,6 +18,25 @@ class EpubBook(Book):
     """A book in EPUB format."""
 
     def extract_chapters(self):
+        try:
+            from ebooklib import epub
+        except ImportError as exc:
+            raise ImportError(
+                "EPUB conversion requires 'ebooklib'. Install with: pip install ebooklib"
+            ) from exc
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError as exc:
+            raise ImportError(
+                "EPUB conversion requires 'beautifulsoup4'. Install with: pip install beautifulsoup4"
+            ) from exc
+        try:
+            from markdownify import markdownify as md
+        except ImportError as exc:
+            raise ImportError(
+                "EPUB conversion requires 'markdownify'. Install with: pip install markdownify"
+            ) from exc
+
         book = epub.read_epub(self.filepath)
         chapters = []
 
@@ -77,6 +90,13 @@ class DocxBook(Book):
     """A book in DOCX format."""
 
     def extract_chapters(self):
+        try:
+            from docx import Document
+        except ImportError as exc:
+            raise ImportError(
+                "DOCX conversion requires 'python-docx'. Install with: pip install python-docx"
+            ) from exc
+
         doc = Document(self.filepath)
         chapters = []
         current_title = "Untitled"
@@ -107,6 +127,14 @@ class PdfBook(Book):
     """A book in PDF format."""
 
     def extract_chapters(self):
+        try:
+            from pdfminer.high_level import extract_pages
+            from pdfminer.layout import LTTextContainer
+        except ImportError as exc:
+            raise ImportError(
+                "PDF conversion requires 'pdfminer.six'. Install with: pip install pdfminer.six"
+            ) from exc
+
         pages = list(extract_pages(self.filepath))
         text_blocks = []
 
@@ -119,7 +147,7 @@ class PdfBook(Book):
         chapters = []
 
         pattern = re.compile(
-            r"(?P<title>(?:(?:CHAPTER|Chapter|Part|PART|BOOK|Book)\\s+\\w+.+?))(\\n{1,2}|$)"
+            r"(?P<title>(?:(?:CHAPTER|Chapter|Part|PART|BOOK|Book)\s+\w+.+?))(\n{1,2}|$)"
         )
         matches = list(pattern.finditer(full_text))
         if matches:
@@ -128,7 +156,7 @@ class PdfBook(Book):
                 end = matches[i + 1].start() if (i + 1) < len(matches) else len(full_text)
                 title_line = matches[i].group("title").strip()
                 body = full_text[start:end].strip()
-                title = re.sub(r"^(CHAPTER|Chapter|Part|PART|Book|BOOK)\\s*", "", title_line).strip()
+                title = re.sub(r"^(CHAPTER|Chapter|Part|PART|Book|BOOK)\s*", "", title_line).strip()
                 chapters.append((title or f"Chapter {i+1}", body))
         else:
             words = full_text.split()

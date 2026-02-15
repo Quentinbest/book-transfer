@@ -94,7 +94,7 @@ chmod +x book2md.sh
 ### TXT Conversion
 1. Reads plain text file
 2. Searches for chapter markers using regex
-3. Splits content by detected chapters
+3. Splits content by detected chapters (when markers exist, preface text before the first marker is not emitted as a separate chapter)
 4. Falls back to single-file output if no chapters found
 
 ## Output Format

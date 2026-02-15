@@ -379,7 +379,9 @@ convert_txt() {
             current_chapter=""
             in_chapter=true
         else
-            current_chapter+="$line"$'\n'
+            if [ "$in_chapter" = true ]; then
+                current_chapter+="$line"$'\n'
+            fi
         fi
     done < "$txt_file"
     

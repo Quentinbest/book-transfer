@@ -40,9 +40,15 @@ chmod +x book2md.sh
 .venv/bin/pytest -q
 ```
 
+## Behavior Notes
+
+- TXT chapter behavior is aligned between Python and Bash:
+  - If chapter markers exist, text before the first marker is not emitted as a separate chapter.
+  - If no markers exist, the whole file is emitted as a single `Book` chapter.
+
 ## Core Files
 
 - `main.py`: CLI entrypoint
 - `book_converter.py`: conversion core
 - `book2md.sh`: shell implementation
-- `tests/test_txt_book.py`: TXT chapter-splitting tests
+- `tests/`: pytest suite for TXT/PDF/DOCX/EPUB behaviors
