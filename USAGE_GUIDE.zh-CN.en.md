@@ -1,50 +1,10 @@
-# book-transfer 使用指南 | book-transfer User Guide
+# 使用指南 | Usage Guide
 
-> 本文档是项目主 README，提供中英文双语的完整使用说明。  
-> This README is the canonical bilingual usage guide for this repository.
+> 本文档以“先能跑、再可控、最后可扩展”为目标，覆盖安装、运行、策略、排障与验证。
 
-## 1. 项目目标 | Project Goal
+## 1. 环境准备 | Environment
 
-`book-transfer` 将 EPUB/PDF/DOCX/TXT 电子书拆分为按章节组织的 `.md` 文件，重点增强了 PDF 流程：
-
-- 更细粒度分章（书签/目录/标题/分块多级降级）
-- 扫描版 PDF 的 OCR 前置处理
-- OCR 之后异常的可恢复中间产物
-- 可被 AI Agent 通过 Skill 稳定调用
-
-`book-transfer` converts EPUB/PDF/DOCX/TXT books into chapter-level `.md` files with a hardened PDF pipeline:
-
-- finer chapter splitting (outline/TOC/heading/chunk fallback chain)
-- OCR-first flow for scanned PDFs
-- crash-recoverable OCR intermediate files
-- stable agent invocation through an installable Skill
-
-## 2. 支持范围 | Supported Scope
-
-### 2.1 输入格式 | Input Formats
-
-- `.epub`
-- `.pdf`
-- `.docx`
-- `.txt`
-
-### 2.2 输出格式 | Output Format
-
-- 输出目录默认：`output_md/`
-- 文件命名：`01_<chapter_title>.md`, `02_<chapter_title>.md`, ...
-- 单文件结构：
-  - 第一行：`# 章节标题`
-  - 其余：章节正文
-
-- Default output directory: `output_md/`
-- Filename pattern: `01_<chapter_title>.md`, `02_<chapter_title>.md`, ...
-- Per file:
-  - First line: `# Chapter Title`
-  - Remaining content: chapter body
-
-## 3. 安装与环境 | Setup
-
-### 3.1 Python 主线（推荐） | Python Mainline (Recommended)
+### 1.1 Python 依赖
 
 ```bash
 python3 -m venv .venv
@@ -52,9 +12,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3.2 OCR 依赖 | OCR Dependency
-
-扫描 PDF 需要 `ocrmypdf`（不会自动安装）：
+### 1.2 OCR 依赖（处理扫描 PDF 必需）
 
 ```bash
 # macOS
@@ -64,43 +22,16 @@ brew install ocrmypdf
 sudo apt-get install ocrmypdf
 ```
 
-Scanned PDF OCR requires `ocrmypdf` (not auto-installed):
+### 1.3 可选：验证工具
 
 ```bash
-# macOS
-brew install ocrmypdf
-
-# Ubuntu/Debian
-sudo apt-get install ocrmypdf
+which ocrmypdf
+.venv/bin/python --version
 ```
 
-### 3.3 Bash 版本依赖 | Bash Version Dependencies
+## 2. 命令与参数 | Command and Options
 
-见 `BASH_VERSION.md`。Bash 版本不是 Python 主线的等价实现。
-
-See `BASH_VERSION.md`. The Bash implementation is not feature-equivalent to the Python mainline.
-
-## 4. 快速开始 | Quick Start
-
-```bash
-.venv/bin/python main.py convert test_book.txt -o output_md
-```
-
-PDF（自动策略 + OCR 自动判定）：
-
-```bash
-.venv/bin/python main.py convert "/path/to/book.pdf" -o "/path/to/out"
-```
-
-PDF (auto strategy + auto OCR detection):
-
-```bash
-.venv/bin/python main.py convert "/path/to/book.pdf" -o "/path/to/out"
-```
-
-## 5. CLI 参数 | CLI Options
-
-命令格式：
+基础命令：
 
 ```bash
 .venv/bin/python main.py convert <input_file> [OPTIONS]
@@ -109,184 +40,119 @@ PDF (auto strategy + auto OCR detection):
 参数：
 
 - `--outdir, -o`：输出目录（默认 `output_md`）
-- `--chapter-mode [auto|outline|toc|heading|chunk]`（默认 `auto`）
-- `--ocr [auto|force|off]`（默认 `auto`）
-- `--ocr-lang TEXT`（默认 `chi_sim+eng`）
-- `--keep-intermediate`（默认关闭）
-- `--chunk-words INT`（默认 `4000`）
-- `--toc-max-pages INT`（默认 `30`）
+- `--chapter-mode`：`auto|outline|toc|heading|chunk`（默认 `auto`）
+- `--ocr`：`auto|force|off`（默认 `auto`）
+- `--ocr-lang`：OCR 语言（默认 `chi_sim+eng`）
+- `--keep-intermediate`：成功后保留中间文件
+- `--chunk-words`：`chunk` 分割词数（默认 `4000`）
+- `--toc-max-pages`：TOC 首轮扫描页数（默认 `30`）
 
-Options:
+## 3. 常用场景 | Common Scenarios
 
-- `--outdir, -o`: output directory (default `output_md`)
-- `--chapter-mode [auto|outline|toc|heading|chunk]` (default `auto`)
-- `--ocr [auto|force|off]` (default `auto`)
-- `--ocr-lang TEXT` (default `chi_sim+eng`)
-- `--keep-intermediate` (off by default)
-- `--chunk-words INT` (default `4000`)
-- `--toc-max-pages INT` (default `30`)
-
-示例：
+### 3.1 普通文本书籍（TXT/EPUB/DOCX）
 
 ```bash
-# 强制 OCR
-.venv/bin/python main.py convert book.pdf -o out --ocr force
-
-# 关闭 OCR，直接分章
-.venv/bin/python main.py convert book.pdf -o out --ocr off
-
-# 只使用 TOC 策略，并把 TOC 首轮扫描页数提高到 40
-.venv/bin/python main.py convert book.pdf -o out --chapter-mode toc --toc-max-pages 40
+.venv/bin/python main.py convert ./book.txt -o ./out/txt
+.venv/bin/python main.py convert ./book.epub -o ./out/epub
+.venv/bin/python main.py convert ./book.docx -o ./out/docx
 ```
 
-## 6. PDF 分章与 OCR 策略 | PDF Splitting and OCR Strategy
+### 3.2 PDF 自动流程（推荐）
 
-### 6.1 `chapter-mode=auto` 固定降级链 | Fixed Fallback Chain
+```bash
+.venv/bin/python main.py convert ./book.pdf -o ./out/pdf --chapter-mode auto --ocr auto
+```
 
-顺序固定：
+### 3.3 强制 OCR（疑似扫描件）
 
-1. `outline`（PDF 书签）
-2. `toc`（目录页）
-3. `heading`（正文标题）
-4. `chunk`（按词数切块）
+```bash
+.venv/bin/python main.py convert ./scan.pdf -o ./out/scan --ocr force
+```
 
-Order is fixed:
+### 3.4 禁用 OCR（已知文本 PDF）
 
-1. `outline` (PDF bookmarks)
-2. `toc` (table of contents pages)
-3. `heading` (body headings)
-4. `chunk` (word-count chunking)
+```bash
+.venv/bin/python main.py convert ./text.pdf -o ./out/text --ocr off
+```
 
-### 6.2 OCR 自动判定（双特征） | OCR Auto Detection (Dual Feature)
+### 3.5 只用 TOC 策略
 
-对前 20 页采样，计算：
+```bash
+.venv/bin/python main.py convert ./book.pdf -o ./out/toc --chapter-mode toc --toc-max-pages 40
+```
+
+## 4. PDF 策略说明 | PDF Strategy
+
+### 4.1 `chapter-mode=auto` 降级链
+
+固定顺序：
+
+1. `outline`
+2. `toc`
+3. `heading`
+4. `chunk`
+
+### 4.2 OCR 自动判定
+
+采样前 20 页，指标：
 
 - `avg_chars_per_page`
 - `empty_page_ratio`
 - `full_page_image_ratio`
 
-规则：
+逻辑：
 
-- 当 `avg_chars_per_page < 80` 或 `empty_page_ratio > 0.7` 时，进入疑似扫描判定。
-- 若同时 `full_page_image_ratio >= 0.6`，判定为扫描件并触发 OCR。
-- 否则视作“稀疏文本/混合 PDF”，不强制 OCR，继续分章。
+- 若字符密度低或空页比例高，进入疑似扫描。
+- 再看整页主图像比例是否足够高。
+- 命中则 OCR；否则按普通 PDF 继续分章。
 
-Rules:
+### 4.3 TOC 自适应深度
 
-- If `avg_chars_per_page < 80` or `empty_page_ratio > 0.7`, mark as scan-suspected.
-- If `full_page_image_ratio >= 0.6`, classify as scanned and run OCR.
-- Otherwise treat as sparse/hybrid text PDF and continue without forced OCR.
+- 首轮：`1..toc_max_pages`。
+- 失败：扩展到 `1..50`，并使用轻量匹配。
+- 仍失败：降级 `heading`。
 
-### 6.3 TOC 自适应深度 | Adaptive TOC Depth
+### 4.4 OCR 崩溃恢复
 
-- 首轮扫描：`1..toc_max_pages`（默认 30 页）
-- 未命中时扩展：`1..50` 页（轻量匹配）
-- 仍失败才降级到 `heading`
+- 临时目录由系统 `tempfile` 生成（前缀 `book-transfer-`）。
+- OCR 完成后若下游失败，会保留 `ocr_output.pdf` 并提示可复用路径。
+- 同时写入 `run.log` 便于复现。
 
-- First pass: `1..toc_max_pages` (default 30 pages)
-- If no TOC hit: extend to `1..50` pages (lightweight matching)
-- Fall back to `heading` only if still not found
+## 5. Skill 调用 | Agent Skill
 
-### 6.4 OCR 中间文件恢复机制 | OCR Intermediate Recovery
-
-临时目录：`/tmp/book-transfer-<run-id>/`
-
-- 成功结束：`--keep-intermediate` 决定是否清理
-- 失败结束：若 OCR 已成功，会保留 `ocr_output.pdf`，并在错误信息中给出可复用路径与 `run.log`
-
-Temp directory: `/tmp/book-transfer-<run-id>/`
-
-- On success: cleaned unless `--keep-intermediate`
-- On failure: if OCR succeeded, `ocr_output.pdf` is preserved and surfaced in the error message with `run.log`
-
-## 7. Agent Skill 调用 | Agent Skill Usage
-
-### 7.1 安装 Skill
+安装：
 
 ```bash
 bash scripts/install_skill.sh
 ```
 
-安装目标：`~/.codex/skills/book-transfer-converter`
+Skill 路径：`~/.codex/skills/book-transfer-converter`
 
-Install target: `~/.codex/skills/book-transfer-converter`
+关键约束：
 
-### 7.2 Skill 约束
+- `agents/openai.yaml`：enum + `additionalProperties: false`
+- `run_book_transfer.sh`：参数白名单、enum 校验、正整数校验、固定命令模板
 
-Skill 包含两层防护：
+## 6. 手动测试清单 | Manual Test Checklist
 
-1. `agents/openai.yaml`
-   - `chapter_mode` / `ocr_mode` 为严格 enum
-   - `input_schema.additionalProperties: false`
-2. `scripts/run_book_transfer.sh`
-   - 参数白名单（未知参数直接报错）
-   - enum 校验 + 正整数校验
-   - 固定命令模板构造
+1. `--ocr off` 处理文本 PDF，确认不触发 OCR。
+2. `--ocr auto` 处理扫描 PDF，确认 OCR 后正常拆章。
+3. 构造下游失败，确认错误提示包含可复用 OCR 文件路径。
+4. 验证 `auto` 降级链：outline/toc/heading/chunk。
+5. Skill Runner 传非法参数，确认立即失败。
 
-The skill has two guardrail layers:
-
-1. `agents/openai.yaml`
-   - strict enums for `chapter_mode` / `ocr_mode`
-   - `input_schema.additionalProperties: false`
-2. `scripts/run_book_transfer.sh`
-   - argument whitelist (unknown args rejected)
-   - enum + positive integer validation
-   - fixed command template
-
-## 8. 测试与质量门禁 | Testing and Quality Gate
-
-### 8.1 运行全量测试 | Run Full Test Suite
+## 7. 自动化测试 | Automated Testing
 
 ```bash
 .venv/bin/pytest -q
-```
-
-### 8.2 覆盖率门禁（>= 90%） | Coverage Gate (>= 90%)
-
-```bash
 .venv/bin/pytest --cov=main --cov=book_converter --cov=pdf_processing --cov=ocr_utils --cov=chapter_utils --cov-fail-under=90 -q
 ```
 
-### 8.3 CI
+## 8. 关键文档 | Related Docs
 
-GitHub Actions 工作流：`.github/workflows/ci.yml`。  
-CI 会执行测试并强制 `--cov-fail-under=90`。
+- 架构：`docs/ARCHITECTURE.md`
+- 业务流程：`docs/BUSINESS_LOGIC.md`
+- 开发运维：`docs/DEVELOPER_RUNBOOK.md`
+- TDD 规范：`docs/TDD_POLICY.md`
+- Bash 差异：`BASH_VERSION.md`
 
-GitHub Actions workflow: `.github/workflows/ci.yml`.  
-CI runs tests and enforces `--cov-fail-under=90`.
-
-### 8.4 TDD 规范
-
-详见 `docs/TDD_POLICY.md` 与 `tests/tdd_evidence/`。
-
-See `docs/TDD_POLICY.md` and `tests/tdd_evidence/`.
-
-## 9. 手动测试建议 | Manual Verification Checklist
-
-1. 使用普通文本 PDF，运行：`--ocr off`，确认不触发 OCR。
-2. 使用扫描 PDF，运行：`--ocr auto`，确认 OCR 后能成功拆章。
-3. 制造 downstream 异常，确认报错含 `Reusable file:` 绝对路径。
-4. 对同一本 PDF 分别测试 `outline/toc/heading/chunk`，确认输出行为符合预期。
-5. 验证 Skill runner：传非法参数应直接失败。
-
-1. For text PDF, run with `--ocr off` and confirm no OCR.
-2. For scanned PDF, run with `--ocr auto` and confirm OCR-first split.
-3. Force downstream failure and verify `Reusable file:` absolute path in error.
-4. Run `outline/toc/heading/chunk` modes on one PDF and compare output behavior.
-5. Validate skill runner: invalid args should fail immediately.
-
-## 10. Bash 版本说明 | Bash Version Note
-
-Bash 版本用于轻量场景，不包含 Python 主线的完整 OCR 自动判定、恢复编排与 Skill 安全约束。详见 `BASH_VERSION.md`。
-
-The Bash version targets lightweight workflows and does not provide full Python-mainline OCR heuristics, recovery orchestration, or skill guardrails. See `BASH_VERSION.md`.
-
-## 11. 相关文件 | Key Files
-
-- `main.py`
-- `book_converter.py`
-- `pdf_processing.py`
-- `ocr_utils.py`
-- `skills/book-transfer-converter/`
-- `docs/TDD_POLICY.md`
-- `tests/`
