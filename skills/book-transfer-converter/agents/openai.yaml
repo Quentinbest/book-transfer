@@ -1,0 +1,45 @@
+interface:
+  display_name: "Book Transfer Converter"
+  short_description: "Split EPUB/PDF/DOCX/TXT into chapter markdown with OCR-first handling for scanned PDFs."
+  default_prompt: "Use the book-transfer converter to split books into chapter markdown. Keep defaults unless user explicitly overrides chapter/OCR mode."
+  input_schema:
+    type: object
+    additionalProperties: false
+    required:
+      - input_file
+    properties:
+      input_file:
+        type: string
+        description: "Absolute or workspace-relative path to input book file."
+      outdir:
+        type: string
+        default: "output_md"
+        description: "Output directory for chapter markdown files."
+      chapter_mode:
+        type: string
+        enum: [auto, outline, toc, heading, chunk]
+        default: auto
+        description: "PDF chapter strategy. auto applies outline->toc->heading->chunk fallback chain."
+      ocr_mode:
+        type: string
+        enum: [auto, force, off]
+        default: auto
+        description: "OCR control for PDF. force always OCR; off never OCR; auto uses scan detection."
+      ocr_lang:
+        type: string
+        default: "chi_sim+eng"
+        description: "OCR language(s) passed to ocrmypdf."
+      keep_intermediate:
+        type: boolean
+        default: false
+        description: "Keep temporary OCR files on successful exit."
+      chunk_words:
+        type: integer
+        minimum: 1
+        default: 4000
+        description: "Word size for chunk fallback mode."
+      toc_max_pages:
+        type: integer
+        minimum: 1
+        default: 30
+        description: "Initial TOC scan depth; tool may extend to 50 pages automatically when needed."

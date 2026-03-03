@@ -1,0 +1,15 @@
+.................................................................        [100%]
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.13.2-final-0 _______________
+
+Name                Stmts   Miss  Cover
+---------------------------------------
+book_converter.py     168     12    93%
+chapter_utils.py       12      0   100%
+main.py                19      1    95%
+ocr_utils.py           80      7    91%
+pdf_processing.py     226     26    88%
+---------------------------------------
+TOTAL                 505     46    91%
+Required test coverage of 90% reached. Total coverage: 90.89%
+65 passed in 0.21s

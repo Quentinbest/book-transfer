@@ -3,11 +3,18 @@ import os
 import re
 from abc import ABC, abstractmethod
 
+from pdf_processing import (
+    extract_pdf_chapters,
+    finalize_pdf_processing,
+    prepare_pdf_for_processing,
+)
+
 class Book(ABC):
     """Abstract base class for a book."""
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, **options):
         self.filepath = filepath
+        self.options = options
 
     @abstractmethod
     def extract_chapters(self):
@@ -127,44 +134,33 @@ class PdfBook(Book):
     """A book in PDF format."""
 
     def extract_chapters(self):
-        try:
-            from pdfminer.high_level import extract_pages
-            from pdfminer.layout import LTTextContainer
-        except ImportError as exc:
-            raise ImportError(
-                "PDF conversion requires 'pdfminer.six'. Install with: pip install pdfminer.six"
-            ) from exc
+        chapter_mode = self.options.get("chapter_mode", "auto")
+        ocr_mode = self.options.get("ocr_mode", "auto")
+        ocr_lang = self.options.get("ocr_lang", "chi_sim+eng")
+        keep_intermediate = bool(self.options.get("keep_intermediate", False))
+        chunk_words = int(self.options.get("chunk_words", 4000))
+        toc_max_pages = int(self.options.get("toc_max_pages", 30))
 
-        pages = list(extract_pages(self.filepath))
-        text_blocks = []
-
-        for page_layout in pages:
-            for element in page_layout:
-                if isinstance(element, LTTextContainer):
-                    text_blocks.append(element.get_text().strip())
-
-        full_text = "\n".join(text_blocks)
-        chapters = []
-
-        pattern = re.compile(
-            r"(?P<title>(?:(?:CHAPTER|Chapter|Part|PART|BOOK|Book)\s+\w+.+?))(\n{1,2}|$)"
+        context = prepare_pdf_for_processing(
+            self.filepath,
+            ocr_mode=ocr_mode,
+            ocr_lang=ocr_lang,
+            keep_intermediate=keep_intermediate,
         )
-        matches = list(pattern.finditer(full_text))
-        if matches:
-            for i in range(len(matches)):
-                start = matches[i].end()
-                end = matches[i + 1].start() if (i + 1) < len(matches) else len(full_text)
-                title_line = matches[i].group("title").strip()
-                body = full_text[start:end].strip()
-                title = re.sub(r"^(CHAPTER|Chapter|Part|PART|Book|BOOK)\s*", "", title_line).strip()
-                chapters.append((title or f"Chapter {i+1}", body))
-        else:
-            words = full_text.split()
-            chunk_size = 4000
-            for i in range(0, len(words), chunk_size):
-                chunk = " ".join(words[i:i+chunk_size])
-                chapters.append((f"Auto Chapter {len(chapters)+1}", chunk))
+        try:
+            chapters = extract_pdf_chapters(
+                context.processed_pdf,
+                chapter_mode=chapter_mode,
+                chunk_words=chunk_words,
+                toc_max_pages=toc_max_pages,
+            )
+        except Exception as exc:
+            note = finalize_pdf_processing(context, success=False, error=exc)
+            if note:
+                raise RuntimeError(f"{exc}\n{note}") from exc
+            raise
 
+        finalize_pdf_processing(context, success=True, error=None)
         return chapters
 
 class TxtBook(Book):
@@ -202,16 +198,16 @@ class BookFactory:
     """Factory for creating book objects."""
 
     @staticmethod
-    def create_book(filepath):
+    def create_book(filepath, **options):
         ext = os.path.splitext(filepath)[1].lower()
         if ext == ".epub":
-            return EpubBook(filepath)
+            return EpubBook(filepath, **options)
         elif ext == ".docx":
-            return DocxBook(filepath)
+            return DocxBook(filepath, **options)
         elif ext == ".pdf":
-            return PdfBook(filepath)
+            return PdfBook(filepath, **options)
         elif ext == ".txt":
-            return TxtBook(filepath)
+            return TxtBook(filepath, **options)
         else:
             raise ValueError(f"Unsupported file type: {ext}")
 
@@ -232,13 +228,37 @@ class MarkdownWriter:
 class BookConverter:
     """Orchestrates the book conversion process."""
 
-    def __init__(self, input_file, outdir):
+    def __init__(
+        self,
+        input_file,
+        outdir,
+        chapter_mode="auto",
+        ocr_mode="auto",
+        ocr_lang="chi_sim+eng",
+        keep_intermediate=False,
+        chunk_words=4000,
+        toc_max_pages=30,
+    ):
         self.input_file = input_file
         self.outdir = outdir
+        self.chapter_mode = chapter_mode
+        self.ocr_mode = ocr_mode
+        self.ocr_lang = ocr_lang
+        self.keep_intermediate = keep_intermediate
+        self.chunk_words = chunk_words
+        self.toc_max_pages = toc_max_pages
 
     def convert(self):
         print(f"📘 Converting: {self.input_file}")
-        book = BookFactory.create_book(self.input_file)
+        book = BookFactory.create_book(
+            self.input_file,
+            chapter_mode=self.chapter_mode,
+            ocr_mode=self.ocr_mode,
+            ocr_lang=self.ocr_lang,
+            keep_intermediate=self.keep_intermediate,
+            chunk_words=self.chunk_words,
+            toc_max_pages=self.toc_max_pages,
+        )
         chapters = book.extract_chapters()
         print(f"→ Detected {len(chapters)} chapters. Writing to {self.outdir}/")
         writer = MarkdownWriter(self.outdir)

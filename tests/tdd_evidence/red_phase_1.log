@@ -1,0 +1,60 @@
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_pdf_ocr_detection.py _______________
+ImportError while importing test module '/Users/quentin/workspace/pythonspace/book-transfer/tests/test_pdf_ocr_detection.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pdf_ocr_detection.py:3: in <module>
+    from ocr_utils import classify_scan_from_metrics
+E   ModuleNotFoundError: No module named 'ocr_utils'
+_______________ ERROR collecting tests/test_pdf_ocr_workflow.py ________________
+ImportError while importing test module '/Users/quentin/workspace/pythonspace/book-transfer/tests/test_pdf_ocr_workflow.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pdf_ocr_workflow.py:3: in <module>
+    from pdf_processing import prepare_pdf_for_processing
+E   ModuleNotFoundError: No module named 'pdf_processing'
+___________ ERROR collecting tests/test_pdf_intermediate_recovery.py ___________
+ImportError while importing test module '/Users/quentin/workspace/pythonspace/book-transfer/tests/test_pdf_intermediate_recovery.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pdf_intermediate_recovery.py:3: in <module>
+    from pdf_processing import ProcessingContext, finalize_pdf_processing
+E   ModuleNotFoundError: No module named 'pdf_processing'
+_________________ ERROR collecting tests/test_pdf_toc_split.py _________________
+ImportError while importing test module '/Users/quentin/workspace/pythonspace/book-transfer/tests/test_pdf_toc_split.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pdf_toc_split.py:1: in <module>
+    from pdf_processing import parse_toc_lines
+E   ModuleNotFoundError: No module named 'pdf_processing'
+____________ ERROR collecting tests/test_pdf_toc_depth_fallback.py _____________
+ImportError while importing test module '/Users/quentin/workspace/pythonspace/book-transfer/tests/test_pdf_toc_depth_fallback.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_pdf_toc_depth_fallback.py:1: in <module>
+    from pdf_processing import extract_chapters_toc
+E   ModuleNotFoundError: No module named 'pdf_processing'
+=========================== short test summary info ============================
+ERROR tests/test_pdf_ocr_detection.py
+ERROR tests/test_pdf_ocr_workflow.py
+ERROR tests/test_pdf_intermediate_recovery.py
+ERROR tests/test_pdf_toc_split.py
+ERROR tests/test_pdf_toc_depth_fallback.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+5 errors in 0.11s

@@ -1,72 +1,65 @@
-import builtins
-import sys
-import types
-
-import pytest
-
 from book_converter import PdfBook
+from pdf_processing import ProcessingContext
 
 
-def _install_fake_pdfminer(monkeypatch, text):
-    pdfminer_module = types.ModuleType("pdfminer")
-    high_level_module = types.ModuleType("pdfminer.high_level")
-    layout_module = types.ModuleType("pdfminer.layout")
-
-    class FakeLTTextContainer:
-        def __init__(self, value):
-            self._value = value
-
-        def get_text(self):
-            return self._value
-
-    def extract_pages(_filepath):
-        return [[FakeLTTextContainer(text)]]
-
-    high_level_module.extract_pages = extract_pages
-    layout_module.LTTextContainer = FakeLTTextContainer
-
-    monkeypatch.setitem(sys.modules, "pdfminer", pdfminer_module)
-    monkeypatch.setitem(sys.modules, "pdfminer.high_level", high_level_module)
-    monkeypatch.setitem(sys.modules, "pdfminer.layout", layout_module)
+def _fake_context(tmp_path, ocr_performed=False):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    return ProcessingContext(
+        input_pdf=str(tmp_path / "input.pdf"),
+        processed_pdf=str(tmp_path / "processed.pdf"),
+        temp_dir=str(run_dir),
+        run_log_path=str(run_dir / "run.log"),
+        ocr_output_path=str(run_dir / "ocr_output.pdf") if ocr_performed else None,
+        ocr_performed=ocr_performed,
+        keep_intermediate=False,
+    )
 
 
-def test_pdf_extract_chapters_detects_markers(monkeypatch):
-    text = "Chapter 1 Intro\nBody A\n\nChapter 2 Ending\nBody B\n"
-    _install_fake_pdfminer(monkeypatch, text)
+def test_pdf_book_extract_chapters_uses_processing_pipeline(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "book_converter.prepare_pdf_for_processing",
+        lambda *args, **kwargs: _fake_context(tmp_path),
+    )
+    monkeypatch.setattr(
+        "book_converter.extract_pdf_chapters",
+        lambda *args, **kwargs: [("A", "Body A"), ("B", "Body B")],
+    )
+    called = {"success": None}
 
-    chapters = PdfBook("dummy.pdf").extract_chapters()
+    def fake_finalize(_ctx, success, error):
+        called["success"] = success
+        assert error is None
+        return ""
 
-    assert len(chapters) == 2
-    assert chapters[0][0] == "1 Intro"
-    assert "Body A" in chapters[0][1]
-    assert chapters[1][0] == "2 Ending"
-    assert "Body B" in chapters[1][1]
+    monkeypatch.setattr("book_converter.finalize_pdf_processing", fake_finalize)
 
+    chapters = PdfBook("dummy.pdf", ocr_mode="off").extract_chapters()
 
-def test_pdf_extract_chapters_fallback_chunks(monkeypatch):
-    text = " ".join(f"w{i}" for i in range(4500))
-    _install_fake_pdfminer(monkeypatch, text)
-
-    chapters = PdfBook("dummy.pdf").extract_chapters()
-
-    assert len(chapters) == 2
-    assert chapters[0][0] == "Auto Chapter 1"
-    assert chapters[1][0] == "Auto Chapter 2"
+    assert chapters == [("A", "Body A"), ("B", "Body B")]
+    assert called["success"] is True
 
 
-def test_pdf_extract_chapters_missing_dependency_message(monkeypatch):
-    for name in list(sys.modules):
-        if name == "pdfminer" or name.startswith("pdfminer."):
-            monkeypatch.delitem(sys.modules, name, raising=False)
+def test_pdf_book_extract_chapters_reports_reusable_path_on_downstream_failure(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "book_converter.prepare_pdf_for_processing",
+        lambda *args, **kwargs: _fake_context(tmp_path, ocr_performed=True),
+    )
 
-    original_import = builtins.__import__
+    def fake_extract(*_args, **_kwargs):
+        raise RuntimeError("downstream parse failed")
 
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name.startswith("pdfminer"):
-            raise ImportError("missing pdfminer")
-        return original_import(name, globals, locals, fromlist, level)
+    monkeypatch.setattr("book_converter.extract_pdf_chapters", fake_extract)
+    monkeypatch.setattr(
+        "book_converter.finalize_pdf_processing",
+        lambda *_args, **_kwargs: "OCR succeeded but downstream failed. Reusable file: /tmp/x.pdf",
+    )
 
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
-    with pytest.raises(ImportError, match="PDF conversion requires 'pdfminer.six'"):
-        PdfBook("dummy.pdf").extract_chapters()
+    try:
+        PdfBook("dummy.pdf", ocr_mode="force").extract_chapters()
+    except RuntimeError as exc:
+        message = str(exc)
+        assert "downstream parse failed" in message
+        assert "OCR succeeded but downstream failed" in message
+    else:
+        raise AssertionError("Expected RuntimeError")
